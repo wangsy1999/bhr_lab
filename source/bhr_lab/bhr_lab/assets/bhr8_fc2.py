@@ -33,7 +33,8 @@ BHR8_FC2_CFG = ArticulationCfg(
             ".*ankle1"  : -15.0*DEG2RAD,
             ".*ankle2"  :  0.0,
             ".*shoulderPitch":  0.0,
-            ".*shoulderRoll" :  0.0,
+            "lshoulderRoll" : 5.0*DEG2RAD,
+            "rshoulderRoll" :-5.0*DEG2RAD,
             ".*shoulderYaw"  :  0.0,
             ".*elbow"        :-30.0*DEG2RAD,    
         },
@@ -118,11 +119,20 @@ BHR8_FC2_CFG = ArticulationCfg(
 )
 
 BHR8_FC2_NOARM_CFG = BHR8_FC2_CFG.copy()  # type: ignore
-BHR8_FC2_NOARM_CFG.spawn.usd_path = f"{PROJECT_ROOT}/robots/bhr/bhr8_fc2_noarm_lim.usd"
+BHR8_FC2_NOARM_CFG.spawn.usd_path = f"{PROJECT_ROOT}/robots/bhr/bhr8_fc2/bhr8_fc2_noarm_lim.usd"
 BHR8_FC2_NOARM_CFG.actuators.pop("arms")
 BHR8_FC2_NOARM_CFG.init_state.joint_pos.pop(".*shoulderPitch")
-BHR8_FC2_NOARM_CFG.init_state.joint_pos.pop(".*shoulderRoll" )
+BHR8_FC2_NOARM_CFG.init_state.joint_pos.pop("lshoulderRoll" )
+BHR8_FC2_NOARM_CFG.init_state.joint_pos.pop("rshoulderRoll" )
 BHR8_FC2_NOARM_CFG.init_state.joint_pos.pop(".*shoulderYaw"  )
 BHR8_FC2_NOARM_CFG.init_state.joint_pos.pop(".*elbow"        )
+
+BHR8_FC2_NAY_CFG = BHR8_FC2_CFG.copy()  # type: ignore
+BHR8_FC2_NAY_CFG.spawn.usd_path = f"{PROJECT_ROOT}/robots/bhr/bhr8_fc2/bhr8_fc2_nay.usd"
+BHR8_FC2_NAY_CFG.actuators["arms"].effort_limit_sim.pop(".*shoulderYaw")
+BHR8_FC2_NAY_CFG.actuators["arms"].velocity_limit_sim.pop(".*shoulderYaw")
+BHR8_FC2_NAY_CFG.actuators["arms"].stiffness.pop(".*shoulderYaw")
+BHR8_FC2_NAY_CFG.actuators["arms"].damping.pop(".*shoulderYaw")
+BHR8_FC2_NAY_CFG.init_state.joint_pos.pop(".*shoulderYaw"  )
 
 """Configuration for the BHR8_FC2 Humanoid robot."""

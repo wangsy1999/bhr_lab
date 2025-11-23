@@ -8,6 +8,8 @@ from isaaclab.sensors import ContactSensor
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.utils.math import quat_apply_inverse, yaw_quat
 
+import isaaclab.envs.mdp as mdp
+
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
@@ -551,5 +553,52 @@ def stand_still_without_cmd(
     # compute out of limits constraints
     diff_angle = asset.data.joint_pos[:, asset_cfg.joint_ids] - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
     reward = torch.sum(torch.abs(diff_angle), dim=1)
-    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :3], dim=1) > command_threshold
+    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :3], dim=1) < command_threshold
     return reward
+
+def desired_contact_forces(
+    env: ManagerBasedRLEnv,
+    sensor_cfg: SceneEntityCfg,
+    threshold: float,
+    std: float
+) -> torch.Tensor:
+    """Reward low contact forces on specified links.
+    
+    This function encourages gentle interactions with the environment
+    by rewarding when contact forces remain below a specified threshold.
+    
+    Args:
+        env: The environment instance
+        sensor_cfg: Configuration for the contact force sensors
+        threshold: Maximum contact force to avoid penalty
+        std: Standard deviation for reward scaling
+
+    Returns:
+        Reward for maintaining low contact forces
+    """
+    violations = mdp.contact_forces(env, threshold, sensor_cfg)
+    return torch.exp(-0.5 * (violations / std) ** 2)
+
+def contact_forces_l2(
+    env: ManagerBasedRLEnv,
+    sensor_cfg: SceneEntityCfg
+) -> torch.Tensor:
+    """Penalize high contact forces on specified links using L2 squared kernel.
+    
+    This function encourages gentle interactions with the environment
+    by penalizing large contact forces using the L2 squared penalty.
+    
+    Args:
+        env: The environment instance
+        sensor_cfg: Configuration for the contact force sensors
+
+    Returns:
+        Reward penalty for high contact forces (L2 squared sum)
+    """
+    # extract the used quantities (to enable type-hinting)
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    # get current net contact forces for the specified body IDs
+    net_contact_forces = contact_sensor.data.net_forces_w[:, sensor_cfg.body_ids, :]
+    # compute L2 squared penalty: sum of squared force magnitudes
+    force_magnitudes = torch.norm(net_contact_forces, dim=-1)  # compute magnitude for each contact
+    return torch.sum(torch.square(force_magnitudes), dim=1)  # L2 squared penalty
