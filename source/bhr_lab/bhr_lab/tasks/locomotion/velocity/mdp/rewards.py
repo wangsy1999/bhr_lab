@@ -37,7 +37,7 @@ def biped_leg_no_cross(
     assetr: Articulation = env.scene[assetr_cfg.name]
     # compute difference, minus is better
     angle = assetr.data.joint_pos[:, assetr_cfg.joint_ids] - assetl.data.joint_pos[:, assetl_cfg.joint_ids]
-    angle = torch.clamp(angle, min=tolerance * DEG2RAD)
+    angle = torch.clamp(angle - tolerance * DEG2RAD, min=0.0)
     return torch.sum(torch.square(angle), dim=1)
 
 def biped_symmetry_air_time(
